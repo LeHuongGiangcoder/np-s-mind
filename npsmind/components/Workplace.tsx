@@ -377,25 +377,7 @@ export default function Workplace({ map }: WorkplaceProps) {
                     </div>
                 </div>
 
-                {/* Tab Bar Row */}
-                <div className="h-10 bg-gray-100/50 flex items-end px-4 gap-2 border-t border-gray-100">
-                    {/* Active Tab */}
-                    <div className="bg-white border-t border-x border-gray-200 rounded-t-lg px-4 py-2 text-sm font-medium text-gray-900 flex items-center gap-2 shadow-sm relative -bottom-px">
-                        <span className="max-w-[150px] truncate">{map.title}</span>
-                        <button onClick={() => router.push('/')} className="hover:bg-gray-100 rounded p-0.5 text-gray-400 hover:text-gray-600">
-                            <X size={14} />
-                        </button>
-                    </div>
 
-                    {/* New Tab Button */}
-                    <button
-                        onClick={handleCreateNewTab}
-                        className="p-1.5 mb-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-md transition-colors"
-                        title="Create New Map"
-                    >
-                        <Plus size={18} />
-                    </button>
-                </div>
 
             </header>
 
