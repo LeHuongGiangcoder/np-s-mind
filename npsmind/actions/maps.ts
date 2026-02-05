@@ -65,15 +65,20 @@ export async function getMap(id: string) {
     }
 }
 
-export async function updateMapContent(mapId: string, content: any) {
+export async function updateMapContent(mapId: string, content: any, thumbnailUrl?: string) {
     try {
         await db.update(mapContents)
             .set({ content, updatedAt: new Date() })
             .where(eq(mapContents.mapId, mapId));
 
-        // Also update the map's metadata updated_at
+        // Also update the map's metadata updated_at and thumbnail if provided
+        const mapUpdateHelper: any = { updatedAt: new Date() };
+        if (thumbnailUrl) {
+            mapUpdateHelper.thumbnailUrl = thumbnailUrl;
+        }
+
         await db.update(maps)
-            .set({ updatedAt: new Date() })
+            .set(mapUpdateHelper)
             .where(eq(maps.id, mapId));
 
         revalidatePath(`/map/${mapId}`);

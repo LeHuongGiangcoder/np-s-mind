@@ -231,7 +231,21 @@ export default function Workplace({ map }: WorkplaceProps) {
 
             setIsSaving(true);
             const flow = rfInstance.toObject();
-            await updateMapContent(map.id, flow);
+
+            let thumbnail = undefined;
+            if (wrapperRef.current) {
+                try {
+                    thumbnail = await toPng(wrapperRef.current, {
+                        cacheBust: true,
+                        backgroundColor: '#f9fafb',
+                        pixelRatio: 0.5, // Lower resolution for storage efficiency
+                    });
+                } catch (e) {
+                    console.error("Thumbnail generation failed", e);
+                }
+            }
+
+            await updateMapContent(map.id, flow, thumbnail);
             setIsSaving(false);
         };
 
