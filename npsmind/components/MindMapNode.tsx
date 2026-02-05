@@ -6,6 +6,7 @@ export type MindMapNodeData = {
     color?: string; // hex or class name
     isRoot?: boolean;
     maxLines?: number;
+    onLabelChange?: (id: string, label: string) => void;
 };
 
 export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>) {
@@ -54,16 +55,22 @@ export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>)
     const handleBlur = useCallback(() => {
         setIsEditing(false);
         if (editValue !== data.label) {
-            setNodes((nodes) =>
-                nodes.map((n) => {
-                    if (n.id === id) {
-                        return { ...n, data: { ...n.data, label: editValue } };
-                    }
-                    return n;
-                })
-            );
+            if (data.onLabelChange) {
+                // Use the parent-provided handler which handles history
+                data.onLabelChange(id, editValue);
+            } else {
+                // Fallback for isolated components
+                setNodes((nodes) =>
+                    nodes.map((n) => {
+                        if (n.id === id) {
+                            return { ...n, data: { ...n.data, label: editValue } };
+                        }
+                        return n;
+                    })
+                );
+            }
         }
-    }, [editValue, data.label, id, setNodes]);
+    }, [editValue, data.label, id, setNodes, data.onLabelChange]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {

@@ -131,6 +131,73 @@ export default function Workplace({ map }: WorkplaceProps) {
         [setEdges]
     );
 
+    // --- History Management ---
+    const [history, setHistory] = useState<{ nodes: Node[], edges: Edge[] }[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+
+    const recordHistory = useCallback((nds: Node[], eds: Edge[]) => {
+        setHistory(prev => {
+            const past = prev.slice(0, historyIndex + 1);
+            return [...past, { nodes: nds, edges: eds }];
+        });
+        setHistoryIndex(prev => prev + 1);
+    }, [historyIndex]);
+
+    const undo = useCallback(() => {
+        if (historyIndex > 0) {
+            const newIndex = historyIndex - 1;
+            const state = history[newIndex];
+            setNodes(state.nodes);
+            setEdges(state.edges);
+            setHistoryIndex(newIndex);
+        }
+    }, [history, historyIndex, setNodes, setEdges]);
+
+    const redo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            const newIndex = historyIndex + 1;
+            const state = history[newIndex];
+            setNodes(state.nodes);
+            setEdges(state.edges);
+            setHistoryIndex(newIndex);
+        }
+    }, [history, historyIndex, setNodes, setEdges]);
+
+    // Initialize History
+    useEffect(() => {
+        if (history.length === 0 && nodes.length > 0) {
+            setHistory([{ nodes, edges }]);
+            setHistoryIndex(0);
+        }
+    }, []);
+
+    // Handle Text Edit (for Undo/Redo)
+    const handleLabelChange = useCallback((id: string, label: string) => {
+        setNodes((nds) => {
+            const newNodes = nds.map((n) => {
+                if (n.id === id) {
+                    return { ...n, data: { ...n.data, label } };
+                }
+                return n;
+            });
+            recordHistory(newNodes, edges);
+            return newNodes;
+        });
+    }, [edges, recordHistory, setNodes]);
+
+    // Inject handleLabelChange into nodes
+    useEffect(() => {
+        setNodes((nds) => nds.map(n => ({
+            ...n,
+            data: { ...n.data, onLabelChange: handleLabelChange }
+        })));
+    }, [handleLabelChange, setNodes]);
+    // Note: handleLabelChange depends on edges/recordHistory. 
+    // If edges change, handleLabelChange changes, forcing a node update. 
+    // This is fine, but might be chatty.
+
+    // --- End History Management ---
+
 
 
     // Handle Selection
@@ -149,7 +216,7 @@ export default function Workplace({ map }: WorkplaceProps) {
         const parentNode = nodes.find(n => n.id === selectedNodeId);
         if (!parentNode) return;
 
-        const newNodeId = `${nodes.length + 1}`;
+        const newNodeId = `${nodes.length + 1}-${Date.now()}`; // Ensure unique ID
         const newNode = {
             id: newNodeId,
             type: 'mindmap',
@@ -157,7 +224,7 @@ export default function Workplace({ map }: WorkplaceProps) {
                 x: parentNode.position.x + 200,
                 y: parentNode.position.y + (Math.random() * 100 - 50)
             },
-            data: { label: 'New Node' }
+            data: { label: 'New Node', onLabelChange: handleLabelChange } // Inject handler
         };
 
         const newEdge = {
@@ -166,59 +233,84 @@ export default function Workplace({ map }: WorkplaceProps) {
             target: newNodeId,
         };
 
-        setNodes((nds) => [...nds, newNode]);
-        setEdges((eds) => [...eds, newEdge]);
-    }, [selectedNodeId, nodes, setNodes, setEdges]);
+        const newNodes = [...nodes, newNode];
+        const newEdges = [...edges, newEdge];
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+        recordHistory(newNodes, newEdges);
+    }, [selectedNodeId, nodes, edges, setNodes, setEdges, recordHistory, handleLabelChange]);
 
     const handleDeleteNode = useCallback(() => {
         if (!selectedNodeId) return;
-        setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
-        setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+        const newNodes = nodes.filter((n) => n.id !== selectedNodeId);
+        const newEdges = edges.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId);
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+        recordHistory(newNodes, newEdges);
         setSelectedNodeId(null);
-    }, [selectedNodeId, setNodes, setEdges]);
+    }, [selectedNodeId, nodes, edges, setNodes, setEdges, recordHistory]);
 
     const handleLayout = useCallback(() => {
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
             nodes,
             edges
         );
-        setNodes([...layoutedNodes]);
-        setEdges([...layoutedEdges]);
+        // Inject handler into layouted nodes just in case (should persist but mapping creates shallow copies)
+        const finalNodes = layoutedNodes.map(n => ({ ...n, data: { ...n.data, onLabelChange: handleLabelChange } }));
+
+        setNodes(finalNodes);
+        setEdges(layoutedEdges);
+        recordHistory(finalNodes, layoutedEdges);
+
         if (rfInstance) {
             window.requestAnimationFrame(() => rfInstance.fitView({ duration: 800 }));
         }
-    }, [nodes, edges, setNodes, setEdges, rfInstance]);
+    }, [nodes, edges, setNodes, setEdges, rfInstance, recordHistory, handleLabelChange]);
 
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Avoid conflicts with inputs
-            if ((e.target as HTMLElement).tagName === 'INPUT') return;
+            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
 
             if (e.key === 'Tab') {
                 e.preventDefault();
                 handleAddNode();
             } else if (e.key === 'Backspace' || e.key === 'Delete') {
                 handleDeleteNode();
+            } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    redo();
+                } else {
+                    undo();
+                }
+            } else if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleAddNode, handleDeleteNode]);
+    }, [handleAddNode, handleDeleteNode, undo, redo]);
 
     const handleColorChange = useCallback((color: string) => {
         if (!selectedNodeId) return;
 
-        setNodes((nds) =>
-            nds.map((n) => {
+        setNodes((nds) => {
+            const newNodes = nds.map((n) => {
                 if (n.id === selectedNodeId) {
                     return { ...n, data: { ...n.data, color } };
                 }
                 return n;
-            })
-        );
-    }, [selectedNodeId, setNodes]);
+            });
+            recordHistory(newNodes, edges);
+            return newNodes;
+        });
+    }, [selectedNodeId, setNodes, edges, recordHistory]);
 
 
     // Auto-save logic
@@ -392,6 +484,10 @@ export default function Workplace({ map }: WorkplaceProps) {
                     onColorChange={handleColorChange}
                     onLayout={handleLayout}
                     selectedNodeId={selectedNodeId}
+                    onUndo={undo}
+                    onRedo={redo}
+                    canUndo={historyIndex > 0}
+                    canRedo={historyIndex < history.length - 1}
                 />
 
 

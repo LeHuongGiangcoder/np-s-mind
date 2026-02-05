@@ -6,7 +6,9 @@ import {
     Braces,
     FileText,
     Link,
-    MousePointer2
+    MousePointer2,
+    Undo2,
+    Redo2
 } from "lucide-react";
 
 type ToolbarProps = {
@@ -14,6 +16,10 @@ type ToolbarProps = {
     onColorChange: (color: string) => void;
     onLayout: () => void;
     selectedNodeId: string | null;
+    onUndo: () => void;
+    onRedo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
 };
 
 const COLORS = [
@@ -25,7 +31,16 @@ const COLORS = [
     { label: 'Purple', value: 'purple', bg: 'bg-purple-500' },
 ];
 
-export default function Toolbar({ onAddNode, onColorChange, onLayout, selectedNodeId }: ToolbarProps) {
+export default function Toolbar({
+    onAddNode,
+    onColorChange,
+    onLayout,
+    selectedNodeId,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo
+}: ToolbarProps) {
     // We can use a popover for colors or just keep it simple.
     // Let's toggle color picker visibility or keep it inline? 
     // Design shows a "Palette" icon. Maybe hovering/clicking it reveals colors.
@@ -40,6 +55,26 @@ export default function Toolbar({ onAddNode, onColorChange, onLayout, selectedNo
     return (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50">
             <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-1.5 flex items-center gap-1">
+
+                {/* Undo / Redo */}
+                <button
+                    onClick={onUndo}
+                    disabled={!canUndo}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    title="Undo"
+                >
+                    <Undo2 size={20} />
+                </button>
+                <button
+                    onClick={onRedo}
+                    disabled={!canRedo}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    title="Redo"
+                >
+                    <Redo2 size={20} />
+                </button>
+
+                <div className="w-px h-5 bg-gray-200 mx-1" />
 
                 {/* Add Node */}
                 <button
