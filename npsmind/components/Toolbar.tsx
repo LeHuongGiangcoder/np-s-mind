@@ -1,8 +1,18 @@
 import React from 'react';
+import {
+    PlusSquare,
+    Palette,
+    Workflow,
+    Braces,
+    FileText,
+    Link,
+    MousePointer2
+} from "lucide-react";
 
 type ToolbarProps = {
     onAddNode: () => void;
     onColorChange: (color: string) => void;
+    onLayout: () => void;
     selectedNodeId: string | null;
 };
 
@@ -15,43 +25,90 @@ const COLORS = [
     { label: 'Purple', value: 'purple', bg: 'bg-purple-500' },
 ];
 
-export default function Toolbar({ onAddNode, onColorChange, selectedNodeId }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onColorChange, onLayout, selectedNodeId }: ToolbarProps) {
+    // We can use a popover for colors or just keep it simple.
+    // Let's toggle color picker visibility or keep it inline? 
+    // Design shows a "Palette" icon. Maybe hovering/clicking it reveals colors.
+    // For now, let's keep it expanded but add the other tools.
+
+    // Actually the design screenshot showed: [ + ] [ Palette ] [ Tree ] [ { } ] [ Note ] [ Link ]
+    // And selecting Palette opened the colors below.
+    // Let's try to mimic that structure slightly better.
+
+    const [showColors, setShowColors] = React.useState(false);
+
     return (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-lg border border-gray-100 p-2 flex items-center gap-2 z-50">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50">
+            <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-1.5 flex items-center gap-1">
 
-            {/* Add Node Button */}
-            <button
-                onClick={onAddNode}
-                disabled={!selectedNodeId}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Add Child Node"
-            >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                </svg>
-            </button>
+                {/* Add Node */}
+                <button
+                    onClick={onAddNode}
+                    disabled={!selectedNodeId}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    title="Add Child Node"
+                >
+                    <PlusSquare size={20} />
+                </button>
 
-            <div className="w-px h-6 bg-gray-200 mx-1" />
+                <div className="w-px h-5 bg-gray-200 mx-1" />
 
-            {/* Color Picker */}
-            <div className="flex items-center gap-1">
-                {COLORS.map((color) => (
-                    <button
-                        key={color.value}
-                        onClick={() => onColorChange(color.value)}
-                        disabled={!selectedNodeId}
-                        className={`w-6 h-6 rounded-full ${color.bg} hover:scale-110 transition-transform disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 ring-2 ring-transparent hover:ring-gray-200`}
-                        title={color.label}
-                    />
-                ))}
+                {/* Color Picker Toggle */}
+                <button
+                    onClick={() => setShowColors(!showColors)}
+                    disabled={!selectedNodeId}
+                    className={`p-2 rounded-lg hover:bg-gray-100 transition-all ${showColors ? 'bg-gray-100 text-blue-600' : 'text-gray-700'} disabled:opacity-30`}
+                    title="Change Color"
+                >
+                    <Palette size={20} />
+                </button>
+
+                {/* Auto Layout */}
+                <button
+                    onClick={onLayout}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-all"
+                    title="Auto Layout"
+                >
+                    <Workflow size={20} />
+                </button>
+
+                <div className="w-px h-5 bg-gray-200 mx-1" />
+
+                {/* Placeholders for future features */}
+                <button
+                    disabled={!selectedNodeId}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Add Summary (Coming Soon)"
+                >
+                    <Braces size={20} />
+                </button>
+                <button
+                    disabled={!selectedNodeId}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Add Note (Coming Soon)"
+                >
+                    <FileText size={20} />
+                </button>
+                <button
+                    disabled={!selectedNodeId}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Add Link (Coming Soon)"
+                >
+                    <Link size={20} />
+                </button>
             </div>
 
-            {/* Visual indicator if nothing is selected */}
-            {!selectedNodeId && (
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap bg-white/80 px-2 py-1 rounded-md backdrop-blur-sm">
-                    Select a node to edit
+            {/* Color Picker Dropdown */}
+            {showColors && selectedNodeId && (
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
+                    {COLORS.map((color) => (
+                        <button
+                            key={color.value}
+                            onClick={() => { onColorChange(color.value); setShowColors(false); }}
+                            className={`w-8 h-8 rounded-full ${color.bg} hover:scale-110 transition-transform ring-2 ring-transparent hover:ring-gray-200`} // Larger touch targets
+                            title={color.label}
+                        />
+                    ))}
                 </div>
             )}
         </div>
