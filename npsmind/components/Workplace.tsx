@@ -135,6 +135,11 @@ export default function Workplace({ map }: WorkplaceProps) {
         [setEdges]
     );
 
+
+
+
+
+
     // --- History Management ---
     const [history, setHistory] = useState<{ nodes: Node[], edges: Edge[] }[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
@@ -203,6 +208,64 @@ export default function Workplace({ map }: WorkplaceProps) {
     // This is fine, but might be chatty.
 
     // --- End History Management ---
+
+    // --- Drag and Drop Creation from Edge ---
+    const connectingNodeId = useRef<string | null>(null);
+
+    const onConnectStart = useCallback((_: any, { nodeId }: { nodeId: string | null }) => {
+        connectingNodeId.current = nodeId;
+    }, []);
+
+    const onConnectEnd = useCallback(
+        (event: any) => {
+            if (!connectingNodeId.current || !rfInstance) return;
+
+            const target = event.target as Element;
+
+            // Check if dropped on pane or background (robust check)
+            // We use closest for background to catch internal SVG elements (dots, grid lines)
+            const isPane = target.classList.contains('react-flow__pane');
+            const isBackground = target.closest('.react-flow__background');
+
+            if (isPane || isBackground) {
+                // Calculate position
+                const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+                const position = rfInstance.screenToFlowPosition({ x: clientX, y: clientY });
+
+                // Create New Node
+                const newNodeId = `${nodes.length + 1}-${Date.now()}`;
+                const newNode: Node = {
+                    id: newNodeId,
+                    type: 'mindmap',
+                    position: {
+                        x: position.x,
+                        y: position.y,
+                    },
+                    data: { label: 'New Node', onLabelChange: handleLabelChange },
+                    origin: [0.5, 0.5],
+                };
+
+                // Create Connection Edge
+                const newEdge: Edge = {
+                    id: `e${connectingNodeId.current}-${newNodeId}`,
+                    source: connectingNodeId.current,
+                    target: newNodeId,
+                };
+
+                // Update State
+                const newNodes = [...nodes, newNode];
+                const newEdges = [...edges, newEdge];
+
+                setNodes(newNodes);
+                setEdges(newEdges);
+                recordHistory(newNodes, newEdges);
+            }
+
+            // Allow start of new connection
+            connectingNodeId.current = null;
+        },
+        [rfInstance, nodes, edges, handleLabelChange, recordHistory, setNodes, setEdges]
+    );
 
 
 
@@ -499,6 +562,8 @@ export default function Workplace({ map }: WorkplaceProps) {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
+                        onConnectStart={onConnectStart}
+                        onConnectEnd={onConnectEnd}
                         onSelectionChange={onSelectionChange}
                         onInit={setRfInstance}
                         nodeTypes={nodeTypes}
