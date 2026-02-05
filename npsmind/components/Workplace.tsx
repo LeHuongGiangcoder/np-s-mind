@@ -100,12 +100,15 @@ export default function Workplace({ map }: WorkplaceProps) {
     // Sync with prop if it changes (external update)
     useEffect(() => {
         setIsStarred(map.isStarred);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map.isStarred]);
 
     // Register custom node types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodeTypes = useMemo(() => ({ mindmap: MindMapNode as any }), []);
 
     // Initial state logic
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processInitialNodes = (nodes: any[]) => {
         if (!nodes || nodes.length === 0) {
             return [{ id: "1", position: { x: 0, y: 0 }, data: { label: "Central Idea", isRoot: true }, type: "mindmap" }];
@@ -122,6 +125,7 @@ export default function Workplace({ map }: WorkplaceProps) {
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [rfInstance, setRfInstance] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -164,11 +168,13 @@ export default function Workplace({ map }: WorkplaceProps) {
     }, [history, historyIndex, setNodes, setEdges]);
 
     // Initialize History
+    // Initialize History
     useEffect(() => {
         if (history.length === 0 && nodes.length > 0) {
             setHistory([{ nodes, edges }]);
             setHistoryIndex(0);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle Text Edit (for Undo/Redo)
@@ -396,12 +402,7 @@ export default function Workplace({ map }: WorkplaceProps) {
         }
     };
 
-    const handleCreateNewTab = async () => {
-        const result = await createMap("Untitled Map");
-        if (result.success && result.data) {
-            router.push(`/map/${result.data.id}`);
-        }
-    };
+
 
 
     return (

@@ -1,4 +1,4 @@
-import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react';
+import { Handle, Position, NodeProps, useReactFlow, Node } from '@xyflow/react';
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 
 export type MindMapNodeData = {
@@ -9,7 +9,7 @@ export type MindMapNodeData = {
     onLabelChange?: (id: string, label: string) => void;
 };
 
-export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>) {
+export default function MindMapNode({ id, data, isConnectable }: NodeProps<Node<MindMapNodeData>>) {
     const { setNodes } = useReactFlow();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(data.label);
