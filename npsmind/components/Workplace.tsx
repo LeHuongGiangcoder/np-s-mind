@@ -131,19 +131,7 @@ export default function Workplace({ map }: WorkplaceProps) {
         [setEdges]
     );
 
-    const onNodeDoubleClick = useCallback((event: any, node: Node) => {
-        const newLabel = window.prompt("Enter new label:", node.data.label as string);
-        if (newLabel !== null) {
-            setNodes((nds) =>
-                nds.map((n) => {
-                    if (n.id === node.id) {
-                        return { ...n, data: { ...n.data, label: newLabel } };
-                    }
-                    return n;
-                })
-            );
-        }
-    }, [setNodes]);
+
 
     // Handle Selection
     const onSelectionChange = useCallback(({ nodes }: OnSelectionChangeParams) => {
@@ -400,7 +388,6 @@ export default function Workplace({ map }: WorkplaceProps) {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
-                        onNodeDoubleClick={onNodeDoubleClick}
                         onSelectionChange={onSelectionChange}
                         onInit={setRfInstance}
                         nodeTypes={nodeTypes}
