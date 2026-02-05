@@ -83,3 +83,57 @@ export async function updateMapContent(mapId: string, content: any) {
         return { success: false, error: "Failed to update map content" };
     }
 }
+
+export async function toggleStarMap(id: string, isStarred: boolean) {
+    try {
+        await db.update(maps)
+            .set({ isStarred, updatedAt: new Date() })
+            .where(eq(maps.id, id));
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to toggle star:", error);
+        return { success: false, error: "Failed to toggle star" };
+    }
+}
+
+export async function updateMapTitle(id: string, title: string) {
+    try {
+        await db.update(maps)
+            .set({ title, updatedAt: new Date() })
+            .where(eq(maps.id, id));
+        revalidatePath("/");
+        revalidatePath(`/map/${id}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to update map title:", error);
+        return { success: false, error: "Failed to update map title" };
+    }
+}
+
+export async function duplicateMap(id: string) {
+    try {
+        const originalMap = await db.query.maps.findFirst({
+            where: eq(maps.id, id),
+            with: { content: true }
+        });
+
+        if (!originalMap) return { success: false, error: "Map not found" };
+
+        const [newMap] = await db.insert(maps).values({
+            title: `${originalMap.title} (Copy)`,
+            isStarred: originalMap.isStarred,
+        }).returning();
+
+        await db.insert(mapContents).values({
+            mapId: newMap.id,
+            content: originalMap.content?.content || { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } },
+        });
+
+        revalidatePath("/");
+        return { success: true, data: newMap };
+    } catch (error) {
+        console.error("Failed to duplicate map:", error);
+        return { success: false, error: "Failed to duplicate map" };
+    }
+}
