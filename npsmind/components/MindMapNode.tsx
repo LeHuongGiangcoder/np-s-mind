@@ -1,20 +1,22 @@
 import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 
 export type MindMapNodeData = {
     label: string;
     color?: string; // hex or class name
     isRoot?: boolean;
+    maxLines?: number;
 };
 
 export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>) {
     const { setNodes } = useReactFlow();
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(data.label);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Default styles based on color or type
     const isRoot = data.isRoot;
+    const maxLines = data.maxLines ?? 5; // Default to 5 lines if not specified
 
     // Map internal colors to Tailwind classes or styles
     const getNodeStyle = (color?: string) => {
@@ -34,6 +36,14 @@ export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>)
             inputRef.current.select();
         }
     }, [isEditing]);
+
+    // Auto-resize textarea
+    useLayoutEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
+        }
+    }, [isEditing, editValue]);
 
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent ReactFlow's onNodeDoubleClick
@@ -56,7 +66,8 @@ export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>)
     }, [editValue, data.label, id, setNodes]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
             handleBlur();
         }
     };
@@ -64,21 +75,30 @@ export default function MindMapNode({ id, data, isConnectable }: NodeProps<any>)
     return (
         <div
             onDoubleClick={handleDoubleClick}
-            className={`px-4 py-2 rounded-xl shadow-sm border-2 min-w-[120px] text-center transition-all ${getNodeStyle(data.color as string)}`}
+            className={`px-4 py-2 rounded-xl shadow-sm border-2 min-w-[120px] max-w-[300px] text-center transition-all ${getNodeStyle(data.color as string)}`}
         >
             <Handle type="target" position={Position.Left} isConnectable={isConnectable} className="w-2 h-2 !bg-gray-400" />
 
             {isEditing ? (
-                <input
+                <textarea
                     ref={inputRef}
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
-                    className="bg-transparent border-none outline-none text-center w-full text-inherit font-inherit p-0"
+                    rows={1}
+                    className="bg-transparent border-none outline-none text-center w-full text-inherit font-inherit p-0 resize-none overflow-hidden block"
                 />
             ) : (
-                <div className="pointer-events-none">
+                <div
+                    className="pointer-events-none break-words"
+                    style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: maxLines,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                    }}
+                >
                     {data.label}
                 </div>
             )}
