@@ -507,6 +507,20 @@ export default function Workplace({ map }: WorkplaceProps) {
                         </div>
                     </div>
 
+                    {/* Toolbar in center */}
+                    <div className="flex-1 flex justify-center mx-4">
+                        <Toolbar
+                            onAddNode={handleAddNode}
+                            onColorChange={handleColorChange}
+                            onLayout={handleLayout}
+                            selectedNodeId={selectedNodeId}
+                            onUndo={undo}
+                            onRedo={redo}
+                            canUndo={historyIndex > 0}
+                            canRedo={historyIndex < history.length - 1}
+                        />
+                    </div>
+
                     {/* Right Actions */}
                     <div className="flex items-center gap-2">
                         <button
@@ -542,17 +556,7 @@ export default function Workplace({ map }: WorkplaceProps) {
             {/* Canvas */}
             <div className="flex-1 bg-gray-50 relative" ref={wrapperRef}>
 
-                {/* Toolbar Positioned Absolute Top Center of Canvas */}
-                <Toolbar
-                    onAddNode={handleAddNode}
-                    onColorChange={handleColorChange}
-                    onLayout={handleLayout}
-                    selectedNodeId={selectedNodeId}
-                    onUndo={undo}
-                    onRedo={redo}
-                    canUndo={historyIndex > 0}
-                    canRedo={historyIndex < history.length - 1}
-                />
+
 
 
                 <ReactFlowProvider>

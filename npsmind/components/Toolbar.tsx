@@ -52,9 +52,10 @@ export default function Toolbar({
 
     const [showColors, setShowColors] = React.useState(false);
 
+
     return (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50">
-            <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-1.5 flex items-center gap-1">
+        <div className="flex flex-col items-center gap-2 z-50">
+            <div className="bg-white rounded-lg border border-gray-200 p-1 flex items-center gap-1 shadow-sm">
 
                 {/* Undo / Redo */}
                 <button
